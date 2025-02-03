@@ -191,23 +191,30 @@ if __name__ == "__main__":
     # Define different parameter configurations
     configs = [
         {
-            'name': 'mountainous',
-            'sigma': 50.0,
-            'sea_level': 0.35,
-            'use_power_function': True,
-            'continent_factor': 1.5
-        },
-        {
-            'name': 'smooth',
-            'sigma': 75.0,
+            'name': 'no_power_function',
+            'sigma': 60.0,
             'sea_level': 0.4,
             'use_power_function': False,
             'continent_factor': 1.0
         },
         {
-            'name': 'archipelago',
-            'sigma': 40.0,
-            'sea_level': 0.6,
+            'name': 'gentle_continents',
+            'sigma': 60.0,
+            'sea_level': 0.4,
+            'use_power_function': True,
+            'continent_factor': 1.2
+        },
+        {
+            'name': 'medium_continents',
+            'sigma': 60.0,
+            'sea_level': 0.4,
+            'use_power_function': True,
+            'continent_factor': 1.5
+        },
+        {
+            'name': 'sharp_continents',
+            'sigma': 60.0,
+            'sea_level': 0.4,
             'use_power_function': True,
             'continent_factor': 2.0
         }
