@@ -1,0 +1,34 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+ENV/
+env/
+.env
+.venv
+
+# Distribution / packaging
+dist/
+build/
+*.egg-info/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+.DS_Store
+
+# Project specific
+*.png
+*.jpg
+*.jpeg
+terrain.png
+!examples/*.png  # Keep example images in version control if we add them later
+
+# Jupyter Notebook
+.ipynb_checkpoints
+*.ipynb 
