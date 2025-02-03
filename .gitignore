@@ -33,3 +33,6 @@ terrain.png
 # Jupyter Notebook
 .ipynb_checkpoints
 *.ipynb 
+
+# Database
+*.db

@@ -7,6 +7,10 @@ from scipy.ndimage import gaussian_filter
 import matplotlib.pyplot as plt
 import os
 import shutil
+import sqlite3
+from db_manager import TerrainDB
+from models import TerrainConfig
+from datetime import datetime
 
 class TerrainGenerator:
     def __init__(self, width: int = 1024, height: int = 1024, output_dir: str = "output") -> None:
@@ -188,37 +192,20 @@ if __name__ == "__main__":
     generator: TerrainGenerator = TerrainGenerator(width=2048, height=1024)
     generator.generate_noise()
 
-    # Define different parameter configurations
-    configs = [
-        {
-            'name': 'no_power_function',
-            'sigma': 60.0,
-            'sea_level': 0.4,
-            'use_power_function': False,
-            'continent_factor': 1.0
-        },
-        {
-            'name': 'gentle_continents',
-            'sigma': 60.0,
-            'sea_level': 0.4,
-            'use_power_function': True,
-            'continent_factor': 1.2
-        },
-        {
-            'name': 'medium_continents',
-            'sigma': 60.0,
-            'sea_level': 0.4,
-            'use_power_function': True,
-            'continent_factor': 1.5
-        },
-        {
-            'name': 'sharp_continents',
-            'sigma': 60.0,
-            'sea_level': 0.4,
-            'use_power_function': True,
-            'continent_factor': 2.0
-        }
-    ]
+    # Initialize database
+    db = TerrainDB()
+    
+    # Get existing configs from database
+    configs = db.get_all_configs()
+    
+    if not configs:
+        print("No configurations found in database. Please run initial setup first.")
+        exit(1)
+    
+    # Convert Pydantic models to dicts for terrain generation
+    config_dicts = [config.model_dump(exclude={'description', 'created_at'}) for config in configs]
+    generator.create_multiple_terrains(config_dicts)
 
-    # Generate all terrains with their cross sections
-    generator.create_multiple_terrains(configs)
+    print("\nConfigurations used:")
+    for config in configs:
+        print(f"- {config.name}: {config.description}")
