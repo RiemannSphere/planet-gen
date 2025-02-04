@@ -3,8 +3,8 @@ from pydantic import BaseModel, Field
 from datetime import datetime
 
 class BaseParameters(BaseModel):
-    """Base class for all terrain generator parameters."""
-    name: str = Field(..., description="Unique identifier for the parameter set")
+    """Base class for all parameter models."""
+    name: str = Field(..., description="Name of the parameter set")
     description: Optional[str] = Field(None, description="Human-readable description of the parameter set")
     created_at: datetime = Field(default_factory=datetime.utcnow)
     

@@ -5,4 +5,5 @@ scipy==1.12.0
 matplotlib==3.8.3
 pydantic>=2.0.0
 sqlalchemy>=2.0.0
-alembic>=1.13.0 
+alembic>=1.13.0
+opensimplex==0.4.5 
