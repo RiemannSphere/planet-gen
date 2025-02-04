@@ -5,7 +5,7 @@ from scipy.ndimage import gaussian_filter
 from .noise_strategy import NoiseStrategy
 
 class SimpleRandomNoiseStrategy(NoiseStrategy):
-    """Generates simple random noise using numpy's random generator."""
+    """Generates simple random noise appropriate for spherical coordinates."""
     
     def __init__(self, seed: int = 42, sigma: float = 2.0):
         """Initialize the noise generator.
@@ -26,17 +26,19 @@ class SimpleRandomNoiseStrategy(NoiseStrategy):
         Returns:
             Generated noise map in latitude/longitude format
         """
-        # Generate two scales of noise like in the terrain generator
-        noise1 = self.rng.rand(*shape)
-        noise2 = self.rng.rand(*shape)
+        height, width = shape
         
-        # Apply Gaussian smoothing at two scales
-        smoothed1 = gaussian_filter(noise1, sigma=self.sigma)
-        smoothed2 = gaussian_filter(noise2, sigma=self.sigma/2)
+        # Generate base noise
+        noise = self.rng.rand(*shape)
         
-        # Combine the two scales
-        combined = smoothed1 * 0.7 + smoothed2 * 0.3
+        # Scale noise by latitude to prevent polar distortion
+        lats = np.linspace(-90, 90, height)
+        lat_weights = np.cos(np.radians(lats))
+        noise = noise * lat_weights[:, np.newaxis]
+        
+        # Apply light smoothing
+        smoothed = gaussian_filter(noise, sigma=self.sigma)
         
         # Normalize to [0, 1] range
-        noise_map = (combined - combined.min()) / (combined.max() - combined.min())
+        noise_map = (smoothed - smoothed.min()) / (smoothed.max() - smoothed.min())
         return noise_map 
