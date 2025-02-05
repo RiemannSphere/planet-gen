@@ -6,6 +6,7 @@ from datetime import datetime
 from generators.simple_generator import SimpleGenerator, SimpleParameters
 from generators.advanced_generator import AdvancedGenerator, AdvancedParameters
 from noise.random_noise import SphericalRandomNoiseStrategy
+from noise.fbm_noise import SphericalFBMNoiseStrategy
 from utils.projections import ProjectionType
 
 def get_valid_parameters(generator_type: str) -> list:
@@ -107,7 +108,7 @@ def generate_all_parameter_variations(n_models: int, output_dir: str, map_types:
     parameters = get_valid_parameters(generator_type)
     
     # Generate noise map once to use for all variations
-    noise = SphericalRandomNoiseStrategy(scale=2.0)
+    noise = SphericalFBMNoiseStrategy(scale=2.0, octaves=6, persistence=0.5, lacunarity=2.0)
     noise_map = noise.generate((180, 360))
     
     # Generate variations for each parameter
@@ -183,7 +184,7 @@ def generate_with_varied_parameter(n_models: int, output_dir: str, map_types: li
     param_values = get_parameter_range(param_to_vary, n_models)
     
     # Generate noise map once
-    noise = SphericalRandomNoiseStrategy(scale=2.0)  # Same scale for both generators
+    noise = SphericalFBMNoiseStrategy(scale=2.0, octaves=6, persistence=0.5, lacunarity=2.0)
     noise_map = noise.generate((180, 360))
     
     # Store generators for combined cross section
@@ -261,7 +262,7 @@ def generate_simple_terrains(n_models: int, output_dir: str, map_types: list):
     scales = np.linspace(1.0, 3.0, n_models)
     
     # Generate noise map once
-    noise = SphericalRandomNoiseStrategy(scale=2.0)
+    noise = SphericalFBMNoiseStrategy(scale=2.0, octaves=6, persistence=0.5, lacunarity=2.0)
     noise_map = noise.generate((180, 360))
     
     for i in range(n_models):
@@ -305,7 +306,7 @@ def generate_advanced_terrains(n_models: int, output_dir: str, map_types: list):
     base_scales = np.linspace(0.8, 1.5, n_models)
     
     # Generate noise map once
-    noise = SphericalRandomNoiseStrategy(scale=2.0)  # Same scale as simple generator
+    noise = SphericalFBMNoiseStrategy(scale=2.0, octaves=6, persistence=0.5, lacunarity=2.0)
     noise_map = noise.generate((180, 360))
     
     for i in range(n_models):
