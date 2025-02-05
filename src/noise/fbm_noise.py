@@ -26,7 +26,7 @@ class SphericalFBMNoiseStrategy(NoiseStrategy):
                        Higher values = more high-frequency variation.
         """
         if seed is None:
-            seed = np.random.randint(0, 2**32 - 1)
+            seed = np.random.randint(0, 2**31 - 1)
         
         # Create separate noise generators for each octave
         self.noise_gens = [OpenSimplex(seed=seed + i) for i in range(octaves)]

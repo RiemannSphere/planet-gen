@@ -6,6 +6,8 @@ import matplotlib.pyplot as plt
 from matplotlib.colors import ListedColormap
 import os
 from datetime import datetime
+import pyvista as pv
+from scipy.interpolate import RegularGridInterpolator
 
 from models.base_parameters import BaseParameters
 from utils.projections import MapProjector, ProjectionType
@@ -203,15 +205,87 @@ class BaseGenerator(ABC, Generic[Param]):
         plt.savefig(filepath, dpi=300, bbox_inches='tight')
         plt.close()
 
-    def run(self, projection_type: ProjectionType = ProjectionType.EQUIRECTANGULAR, suffix: str = "", water_level: float = 0.0) -> None:
+    def view_3d_terrain(self, radius: float = 1.0, scale_factor: float = 0.1, 
+                       water_level: Optional[float] = None) -> None:
+        """Create an interactive 3D visualization of the planetary terrain.
+        
+        Args:
+            radius: Base radius of the sphere (default: 1.0)
+            scale_factor: Factor to scale the displacement values (default: 0.1)
+            water_level: Optional water level to show ocean (default: None)
+        """
+        # Configure PyVista theme
+        pv.set_plot_theme('document')
+        
+        # Create a spherical mesh
+        sphere = pv.Sphere(radius=radius, phi_resolution=self.shape[0], 
+                          theta_resolution=self.shape[1])
+        
+        # Get vertex positions and normalize them
+        vertices = sphere.points
+        normalized_vertices = vertices / np.linalg.norm(vertices, axis=1)[:, np.newaxis]
+        
+        # Convert vertices to lat/lon coordinates for interpolation
+        lat = np.arccos(normalized_vertices[:, 2])  # theta
+        lon = np.arctan2(normalized_vertices[:, 1], normalized_vertices[:, 0])  # phi
+        
+        # Normalize to the displacement map grid coordinates
+        lat_norm = lat / np.pi  # [0, 1]
+        lon_norm = (lon + np.pi) / (2 * np.pi)  # [0, 1]
+        
+        # Get interpolated displacement values
+        y = np.linspace(0, 1, self.shape[0])
+        x = np.linspace(0, 1, self.shape[1])
+        interpolator = RegularGridInterpolator((y, x), self.displacement_map)
+        
+        points = np.column_stack((lat_norm, lon_norm))
+        displacement_values = interpolator(points)
+        
+        # Apply displacement along the normal vectors
+        displaced_vertices = vertices + (normalized_vertices * 
+                                      displacement_values[:, np.newaxis] * 
+                                      scale_factor)
+        
+        # Update mesh vertices
+        sphere.points = displaced_vertices
+        
+        # Create plotter with custom text
+        plotter = pv.Plotter()
+        
+        # Add the terrain mesh
+        plotter.add_mesh(sphere, cmap='terrain', scalars=displacement_values,
+                        show_scalar_bar=True, scalar_bar_args={'title': 'Elevation'})
+        
+        # Add water sphere if water_level is specified
+        if water_level is not None:
+            water_sphere = pv.Sphere(radius=radius + water_level * scale_factor,
+                                   phi_resolution=self.shape[0] // 2,
+                                   theta_resolution=self.shape[1] // 2)
+            plotter.add_mesh(water_sphere, color='blue', opacity=0.3)
+        
+        # Add title
+        plotter.add_text(f"3D Terrain - {self.parameters.name}", position='upper_edge')
+        
+        # Enable camera controls
+        plotter.show_axes()
+        plotter.camera.zoom(1.5)  # Start slightly zoomed out
+        
+        # Show the interactive window
+        plotter.show()
+        
+    def run(self, projection_type: ProjectionType = ProjectionType.EQUIRECTANGULAR, 
+            suffix: str = "", water_level: float = 0.0, show_3d: bool = True) -> None:
         """Run the generator and save visualizations.
         
         Args:
             projection_type: Type of map projection to use (default: EQUIRECTANGULAR)
             suffix: Optional suffix to add to the filename
             water_level: Level at which to draw coastlines (default: 0.0)
+            show_3d: Whether to show 3D visualization (default: True)
         """
         self.create_displacement_map()
         self.save_2d_projection(projection_type, suffix, water_level)
         self.save_terrain_visualization(projection_type, water_level, suffix=suffix)
         self.save_equatorial_cross_section(water_level=water_level)
+        if show_3d:
+            self.view_3d_terrain(water_level=water_level)

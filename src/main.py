@@ -245,6 +245,12 @@ def generate_with_varied_parameter(n_models: int, output_dir: str, map_types: li
                 projection_type=ProjectionType.EQUIRECTANGULAR,
                 suffix=f"_{name}"
             )
+            
+        if 'cross_section' in map_types:
+            generator.save_equatorial_cross_section()
+            
+        if '3d' in map_types:
+            generator.view_3d_terrain(water_level=0.0)
     
     # Create combined cross section plot if requested
     if 'cross_section' in map_types:
@@ -297,6 +303,9 @@ def generate_simple_terrains(n_models: int, output_dir: str, map_types: list):
             
         if 'cross_section' in map_types:
             generator.save_equatorial_cross_section()
+            
+        if '3d' in map_types:
+            generator.view_3d_terrain(water_level=0.0)
 
 def generate_advanced_terrains(n_models: int, output_dir: str, map_types: list):
     """Generate n_models using the advanced generator with varied parameters."""
@@ -344,6 +353,9 @@ def generate_advanced_terrains(n_models: int, output_dir: str, map_types: list):
             
         if 'cross_section' in map_types:
             generator.save_equatorial_cross_section()
+            
+        if '3d' in map_types:
+            generator.view_3d_terrain(water_level=0.0)
 
 def main():
     # Set up argument parser
@@ -358,9 +370,9 @@ def main():
                        help='Number of models to generate')
     parser.add_argument('-m', '--map_type',
                        nargs='+',
-                       choices=['terrain', 'projection', 'cross_section'],
+                       choices=['terrain', 'projection', 'cross_section', '3d'],
                        default=['terrain', 'projection'],
-                       help='Type of maps to generate (terrain, projection, and/or cross_section)')
+                       help='Type of maps to generate (terrain, projection, cross_section, and/or 3d)')
     group = parser.add_mutually_exclusive_group()
     group.add_argument('-v', '--variate',
                       help='Parameter to vary while keeping others fixed. For simple generator: scale, noise_scale. '
