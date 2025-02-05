@@ -1,44 +1,70 @@
 import numpy as np
 from numpy.typing import NDArray
 from scipy.ndimage import gaussian_filter
+from opensimplex import OpenSimplex
+from typing import Tuple
 
 from .noise_strategy import NoiseStrategy
 
-class SimpleRandomNoiseStrategy(NoiseStrategy):
-    """Generates simple random noise appropriate for spherical coordinates."""
+class SphericalRandomNoiseStrategy(NoiseStrategy):
+    """Generates smooth noise appropriate for spherical coordinates using OpenSimplex noise."""
     
-    def __init__(self, seed: int = 42, sigma: float = 2.0):
+    def __init__(self, seed: int | None = None, scale: float = 3.0):
         """Initialize the noise generator.
         
         Args:
-            seed: Random seed for noise generation
-            sigma: Standard deviation for Gaussian smoothing
+            seed: Random seed for noise generation. If None, a random seed will be used.
+            scale: Scale factor for noise input coordinates.
         """
-        self.rng = np.random.RandomState(seed)
-        self.sigma = sigma
+        if seed is None:
+            seed = np.random.randint(0, 2**32 - 1)
+        self.noise_gen = OpenSimplex(seed=seed)
+        self.scale = scale
     
-    def generate(self, shape: tuple[int, int]) -> NDArray[np.float64]:
-        """Generate a noise map with the given shape.
+    def _spherical_to_cartesian(self, theta: np.ndarray, phi: np.ndarray) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
+        """Convert spherical coordinates to Cartesian.
         
         Args:
-            shape: Tuple of (lat_points, lon_points) for the noise map
-            
+            theta: Latitude angles in radians.
+            phi: Longitude angles in radians.
+        
         Returns:
-            Generated noise map in latitude/longitude format
+            x, y, z Cartesian coordinates.
         """
-        height, width = shape
+        x = np.sin(theta) * np.cos(phi)
+        y = np.sin(theta) * np.sin(phi)
+        z = np.cos(theta)
+        return x, y, z
+    
+    def _spherical_noise(self, x: float, y: float, z: float) -> float:
+        """Generate OpenSimplex noise for given Cartesian coordinates.
         
-        # Generate base noise
-        noise = self.rng.rand(*shape)
+        Args:
+            x, y, z: Cartesian coordinates on the unit sphere.
         
-        # Scale noise by latitude to prevent polar distortion
-        lats = np.linspace(-90, 90, height)
-        lat_weights = np.cos(np.radians(lats))
-        noise = noise * lat_weights[:, np.newaxis]
+        Returns:
+            Noise value at the given point.
+        """
+        return self.noise_gen.noise3(self.scale * x, self.scale * y, self.scale * z)
+    
+    def generate(self, shape: Tuple[int, int]) -> np.ndarray:
+        """Generate a noise map with the given shape using spherical coordinates.
         
-        # Apply light smoothing
-        smoothed = gaussian_filter(noise, sigma=self.sigma)
+        Args:
+            shape: Tuple of (lat_points, lon_points) defining the grid resolution.
         
-        # Normalize to [0, 1] range
-        noise_map = (smoothed - smoothed.min()) / (smoothed.max() - smoothed.min())
-        return noise_map 
+        Returns:
+            Generated noise map in latitude/longitude format.
+        """
+        lat_points, lon_points = shape
+        theta = np.linspace(0, np.pi, lat_points)  # Latitude
+        phi = np.linspace(0, 2 * np.pi, lon_points)  # Longitude
+        
+        # Create a meshgrid for the spherical coordinates
+        Theta, Phi = np.meshgrid(theta, phi, indexing='ij')
+        x, y, z = self._spherical_to_cartesian(Theta, Phi)
+        
+        # Generate noise values
+        noise_map = np.vectorize(self._spherical_noise)(x, y, z)
+        
+        return noise_map

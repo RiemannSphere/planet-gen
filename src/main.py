@@ -1,43 +1,64 @@
+import os  # Add import at top
 from generators.simple_generator import SimpleGenerator, SimpleParameters
-from noise.perlin_noise import PerlinNoiseStrategy
-from noise.random_noise import SimpleRandomNoiseStrategy
+from noise.random_noise import SphericalRandomNoiseStrategy
 from utils.projections import ProjectionType
 
 def main():
-    # Set up base parameters
-    base_params = SimpleParameters(
-        name="simple_terrain",
-        scale=2.0  # Adjust scale factor for more pronounced features
-    )
+    # Define output directory
+    output_dir = "output"  # or whatever your output directory path is
     
-    # Create both noise strategies
-    random_noise = SimpleRandomNoiseStrategy(
-        seed=42,
-        sigma=2.0  # Adjust for smoother/rougher terrain
-    )
+    # Clear existing image files in output directory
+    for file in os.listdir(output_dir):
+        if file.endswith(('.png', '.jpg', '.jpeg')):
+            os.remove(os.path.join(output_dir, file))
+            
+    # Create output directory if it doesn't exist
+    os.makedirs(output_dir, exist_ok=True)
+            
+    # Create a list of different parameter configurations
+    configurations = [
+        {"name": "terrain_1", "scale": 1.0, "noise_scale": 1.0},
+        {"name": "terrain_2", "scale": 1.5, "noise_scale": 1.5},
+        {"name": "terrain_3", "scale": 2.0, "noise_scale": 2.0},
+        {"name": "terrain_4", "scale": 2.5, "noise_scale": 1.0},
+        {"name": "terrain_5", "scale": 1.0, "noise_scale": 2.5},
+        {"name": "terrain_6", "scale": 3.0, "noise_scale": 1.5},
+        {"name": "terrain_7", "scale": 1.5, "noise_scale": 3.0},
+        {"name": "terrain_8", "scale": 2.0, "noise_scale": 2.5},
+        {"name": "terrain_9", "scale": 2.5, "noise_scale": 2.0},
+        {"name": "terrain_10", "scale": 3.0, "noise_scale": 3.0},
+    ]
     
-    perlin_noise = PerlinNoiseStrategy(
-        seed=42,
-        frequency=3.0  # Higher frequency = more detailed terrain
-    )
-    
-    # Generate terrain with random noise (simpler approach)
-    print("Generating terrain with simple random noise...")
-    random_generator = SimpleGenerator(
-        shape=(180, 360),  # 1-degree resolution
-        parameters=base_params,
-        noise=random_noise
-    )
-    random_generator.run(projection_type=ProjectionType.EQUIRECTANGULAR, suffix="_random_noise")
-    
-    # Generate terrain with Perlin noise (more complex approach)
-    print("Generating terrain with Perlin noise...")
-    perlin_generator = SimpleGenerator(
-        shape=(180, 360),  # 1-degree resolution
-        parameters=base_params,
-        noise=perlin_noise
-    )
-    perlin_generator.run(projection_type=ProjectionType.EQUIRECTANGULAR, suffix="_perlin_noise")
+    # Generate terrain for each configuration
+    for config in configurations:
+        print(f"Generating terrain for {config['name']}...")
+        
+        # Set up parameters for this configuration
+        params = SimpleParameters(
+            name=config['name'],
+            scale=config['scale']
+        )
+        
+        # Create noise strategy
+        noise = SphericalRandomNoiseStrategy(
+            scale=config['noise_scale']
+        )
+        
+        # Create generator
+        generator = SimpleGenerator(
+            shape=(180, 360),  # 1-degree resolution
+            parameters=params,
+            noise=noise
+        )
+        
+        # First create the displacement map
+        generator.create_displacement_map()
+        
+        # Then generate and save the visualization
+        generator.save_terrain_visualization(
+            projection_type=ProjectionType.EQUIRECTANGULAR,
+            suffix=f"_{config['name']}"
+        )
 
 if __name__ == "__main__":
     main() 

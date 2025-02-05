@@ -3,6 +3,7 @@ from typing import Optional, List, TypeVar, Generic, Union, Tuple
 import numpy as np
 from numpy.typing import NDArray
 import matplotlib.pyplot as plt
+from matplotlib.colors import ListedColormap
 import os
 from datetime import datetime
 
@@ -68,8 +69,14 @@ class BaseGenerator(ABC, Generic[Param]):
         # Create visualization and save
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         plt.figure(figsize=(12, 6))
-        plt.imshow(projected_map, cmap='terrain')
+        plt.imshow(projected_map, cmap='terrain', origin='upper')
         plt.colorbar(label='Displacement')
+        
+        # Add latitude ticks and labels
+        lat_ticks = np.linspace(0, projected_map.shape[0], 7)  # 7 ticks including endpoints
+        lat_labels = np.linspace(90, -90, 7, dtype=int)  # From 90° to -90°
+        plt.yticks(lat_ticks, lat_labels)
+        
         plt.title(f"2D Projection ({projection_type.value}) - {self.parameters.name}")
         
         filename = f"projected_map_{self.parameters.name}{suffix}_{timestamp}.png"
@@ -111,8 +118,48 @@ class BaseGenerator(ABC, Generic[Param]):
         
         plt.close()
 
+    def save_terrain_visualization(self, projection_type: ProjectionType, water_level: float = 0.0, suffix: str = "") -> None:
+        """Project and save a terrain visualization with land and water.
+        
+        Args:
+            projection_type: Type of map projection to use
+            water_level: Threshold for water level (default: 0.0)
+            suffix: Optional suffix to add to the filename
+            
+        Raises:
+            RuntimeError: If displacement_map hasn't been generated yet
+        """
+        if not hasattr(self, 'displacement_map'):
+            raise RuntimeError("Displacement map hasn't been generated. Call create_displacement_map() first.")
+        
+        # Get the projected map
+        projected_map = self.projector.project_to_2d(self.displacement_map, projection_type)
+        
+        # Create binary land-water map
+        terrain_map = np.where(projected_map > water_level, 1, 0)
+        
+        # Create visualization and save
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        plt.figure(figsize=(12, 6))
+        
+        # Create custom colormap for land (green) and water (blue)
+        colors = ['#1E90FF', '#228B22']  # Deep blue for water, forest green for land
+        plt.imshow(terrain_map, cmap=ListedColormap(colors), origin='upper')
+        
+        # Add latitude ticks and labels
+        lat_ticks = np.linspace(0, projected_map.shape[0], 7)
+        lat_labels = np.linspace(90, -90, 7, dtype=int)
+        plt.yticks(lat_ticks, lat_labels)
+        
+        plt.title(f"Terrain Visualization ({projection_type.value}) - {self.parameters.name}")
+        
+        filename = f"terrain_map_{self.parameters.name}{suffix}_{timestamp}.png"
+        filepath = os.path.join(self.output_dir, filename)
+        plt.savefig(filepath, dpi=300, bbox_inches='tight')
+        plt.close()
+
     def run(self, projection_type: ProjectionType = ProjectionType.EQUIRECTANGULAR, suffix: str = "") -> None:
-        """Run the generator and save both 2D projection and cross section visualizations.
+        """Run the generator and save visualizations.
         
         Args:
             projection_type: Type of map projection to use (default: EQUIRECTANGULAR)
@@ -120,4 +167,5 @@ class BaseGenerator(ABC, Generic[Param]):
         """
         self.create_displacement_map()
         self.save_2d_projection(projection_type, suffix)
+        self.save_terrain_visualization(projection_type, suffix=suffix)
         self.save_equatorial_cross_section()
