@@ -81,6 +81,61 @@ alembic downgrade -1  # Go back one version
 alembic downgrade base  # Revert all migrations
 ```
 
+## Running the Project
+
+The project can be run with various command-line arguments to control the terrain generation process. Here's the basic syntax:
+
+```bash
+python src/main.py -g <generator_type> -n <number_of_models> [options]
+```
+
+### Command Line Arguments
+
+- `-g, --generator`: Type of generator to use (Required)
+  - Options: `simple`, `advanced`
+- `-n, --num_models`: Number of models to generate (Required)
+- `-m, --map_type`: Types of maps to generate (Optional)
+  - Options: `terrain`, `projection`, `cross_section`
+  - Multiple types can be specified: `-m terrain projection cross_section`
+  - Default: `terrain projection`
+- `-v, --variate`: Parameter to vary while keeping others fixed (Optional)
+  - For simple generator: `scale`
+  - For advanced generator: `base_scale`
+- `-va, --vary_all`: Generate variations for all parameters of the selected generator (Optional)
+
+### Example Usage Scenarios
+
+1. Generate a single terrain using the simple generator:
+```bash
+python src/main.py -g simple -n 1
+```
+
+2. Generate multiple terrains using the advanced generator:
+```bash
+python src/main.py -g advanced -n 5
+```
+
+3. Generate terrains with all map types (terrain, projection, and cross-section):
+```bash
+python src/main.py -g advanced -n 3 -m terrain projection cross_section
+```
+
+4. Generate variations by varying a specific parameter:
+```bash
+# Vary scale parameter for simple generator
+python src/main.py -g simple -n 5 -v scale
+
+# Vary base_scale parameter for advanced generator
+python src/main.py -g advanced -n 5 -v base_scale
+```
+
+5. Generate variations for all parameters:
+```bash
+python src/main.py -g advanced -n 3 -va
+```
+
+The generated files will be saved in the `output` directory. Each run clears previous output files to maintain a clean workspace.
+
 ## Features (Planned)
 - 2D terrain map generation
 - Height map visualization
